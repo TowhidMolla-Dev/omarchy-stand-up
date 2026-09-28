@@ -70,7 +70,12 @@ BarWidget {
 
   function injectPanel() {
     if (!panelLoader.item) return
-    panelLoader.item.bar = root.bar
+    // Bind, do not assign. The Bar is attached to this widget after the
+    // panel loads, so a one-shot `= root.bar` captured null. Bindings track
+    // the source as it changes, and passing the service directly saves the
+    // panel from having to re-derive it from the bar.
+    panelLoader.item.bar = Qt.binding(function() { return root.bar })
+    panelLoader.item.service = Qt.binding(function() { return root.standService })
     panelLoader.item.anchorItem = button
     panelLoader.item.hostWidget = root
   }

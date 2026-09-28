@@ -44,6 +44,44 @@ Panel {
         width: parent.width
         spacing: Style.space(12)
 
+        // -------------------------------------------------- bar display
+        Text {
+          textFormat: Text.PlainText
+          width: parent.width
+          text: "Bar display"
+          color: root.fg
+          font.family: root.bar ? root.bar.fontFamily : Style.font.family
+          font.pixelSize: Style.font.subtitle
+          font.bold: true
+        }
+
+        ButtonGroup {
+          width: parent.width
+          value: root.standService ? root.standService.barMode : "compact"
+          options: [
+            { value: "full", label: "Full" },
+            { value: "compact", label: "Ring" },
+            { value: "hover", label: "Hover" }
+          ]
+          onChanged: function(value) {
+            if (root.standService) root.standService.setBarMode(value)
+          }
+        }
+
+        Text {
+          textFormat: Text.PlainText
+          width: parent.width
+          wrapMode: Text.WordWrap
+          text: root.standService && root.standService.barMode === "compact"
+            ? "Icon with a ring that fills as the stretch runs. No numbers, no hover needed."
+            : (root.standService && root.standService.barMode === "hover"
+                ? "Icon only until you hover it, then the countdown slides in."
+                : "Icon plus the countdown, as before.")
+          color: Util.alpha(root.fg, 0.6)
+          font.family: root.bar ? root.bar.fontFamily : Style.font.family
+          font.pixelSize: Style.font.caption
+        }
+
         // -------------------------------------------------- schedule
         Text {
           textFormat: Text.PlainText
