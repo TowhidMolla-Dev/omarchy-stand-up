@@ -1,0 +1,9 @@
+# Omarchy plugin scratch/editor files
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Local screenshots / debugging output
+*.png
+!docs/*.png

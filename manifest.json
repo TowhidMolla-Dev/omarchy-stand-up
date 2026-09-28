@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "towhid.stand-up",
+  "name": "Stand Up",
+  "version": "0.3.0",
+  "author": "towhid",
+  "license": "MIT",
+  "description": "Stand-up and stretch reminder: every 45 minutes a fullscreen guided 3-move stretch, with a rotating routine library and honest self-reporting so you can see whether you actually moved.",
+  "kinds": [
+    "service",
+    "bar-widget",
+    "overlay"
+  ],
+  "entryPoints": {
+    "service": "Service.qml",
+    "barWidget": "BarWidget.qml",
+    "overlay": "Overlay.qml"
+  },
+  "barWidget": {
+    "displayName": "Stand Up",
+    "category": "Health",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
