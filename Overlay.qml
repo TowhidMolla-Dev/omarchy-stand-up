@@ -45,11 +45,19 @@ Item {
     ? 1 - Math.min(1, Math.max(0, root.moveRemaining / root.moveLength))
     : 0
 
-  property color background: Color.menu.background
+  // The scrim is Color.background and menu.background resolves to the same
+  // value, so a menu-coloured card would vanish into it. Lift the card with
+  // a translucent foreground wash instead, which composites over the opaque
+  // scrim and keeps the surface readable.
+  property color background: Util.alpha(Color.foreground, 0.08)
   property color foreground: Color.menu.text
   property color border: Color.menu.border
   property var borderSpec: Border.surfaceSpec("menu", "border", border, Math.max(1, Style.space(2)))
-  property color scrim: Color.menu.scrim
+  // Opaque on purpose. menu.scrim is background at 0.5 alpha, so a video
+  // kept playing behind a dimmed wash and the stretch was easy to ignore.
+  // Color.background is fully opaque, so the stretch actually blocks the
+  // screen until the routine is logged or snoozed.
+  property color scrim: Color.background
   readonly property int cornerRadius: Style.cornerRadius
   property int contentMargin: Style.spacing.panelPadding
 
