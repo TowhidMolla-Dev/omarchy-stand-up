@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "towhid.stand-up",
   "name": "Stand Up",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "author": "towhid",
   "license": "MIT",
   "description": "Stand-up and stretch reminder: every 45 minutes a fullscreen guided 3-move stretch, with a rotating routine library and honest self-reporting so you can see whether you actually moved.",

@@ -198,6 +198,65 @@ Item {
     root.armWorkCountdown(root.pendingSnooze ? root.snoozeSeconds : root.workSeconds)
   }
 
+  // --------------------------------------------------- media playback guard
+  // A break that only blacks out the screen is useless during a film: the
+  // audio keeps going and the video keeps advancing behind the block, so
+  // nothing is actually restful and the film plays on regardless. Pause
+  // whatever is playing when the break opens, and resume exactly that set
+  // when it is dismissed.
+  //
+  // MPRIS is spoken directly over busctl; playerctl is not installed here.
+  // Two rules keep this from being obnoxious: only a player found in the
+  // Playing state is ever touched, and only the players we paused are
+  // resumed, so a track the user paused themselves never starts up behind
+  // their back.
+  property var mediaPausedBy: []
+  readonly property bool mediaActive: mediaPausedBy.length > 0
+
+  // Single line on purpose: this is handed to `bash -c` as one string, and
+  // a multi-line if/then does not survive being joined into one.
+  readonly property string mediaScanCommand:
+    "for b in $(busctl --user list --no-pager 2>/dev/null | awk '$1 ~ /^org\\.mpris\\.MediaPlayer2\\./ {print $1}'); do "
+    + "busctl --user get-property \"$b\" /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player PlaybackStatus 2>/dev/null | grep -q Playing "
+    + "&& busctl --user call \"$b\" /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player Pause >/dev/null 2>&1 "
+    + "&& echo \"$b\"; done"
+
+  readonly property string mediaPlayCommand:
+    "for b in \"$@\"; do busctl --user call \"$b\" /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player Play >/dev/null 2>&1; done"
+
+  // Echoes one bus name per line, and only for players it actually paused.
+  Process {
+    id: mediaScan
+    command: ["bash", "-c", root.mediaScanCommand]
+    stdout: StdioCollector {
+      id: mediaScanOut
+      onStreamFinished: {
+        var names = mediaScanOut.text.split("\n").filter(function(n) { return n.length > 0 })
+        if (names.length > 0) root.mediaPausedBy = names
+      }
+    }
+  }
+
+  Process {
+    id: mediaPlay
+    property var targets: []
+    command: ["bash", "-c", root.mediaPlayCommand, "media-resume"].concat(targets)
+  }
+
+  function pauseMedia() {
+    if (mediaScan.running) return
+    mediaScan.running = true
+  }
+
+  function resumeMedia() {
+    if (mediaPausedBy.length === 0) return
+    // Hand the list to the process before clearing it, so a second dismiss
+    // within one break cannot resume the same player twice.
+    mediaPlay.targets = mediaPausedBy
+    root.mediaPausedBy = []
+    mediaPlay.running = true
+  }
+
   function startBreak() {
     root.phase = "break"
     root.moveIndex = 0
@@ -209,11 +268,13 @@ Item {
     root.scheduleSave()
     root.notify("Time to stand up", root.routine.title + " - " + root.routine.focus)
     root.playSound()
+    if (!root.previewing) root.pauseMedia()
     root.summonOverlay()
   }
 
   // `moved` is the honest answer to "did you actually do them".
   function completeBreak(moved) {
+    root.resumeMedia()
     if (root.previewing) {
       root.finishPreview()
       return
@@ -230,6 +291,7 @@ Item {
   }
 
   function finishPreview() {
+    root.resumeMedia()
     root.previewing = false
     root.pendingSnooze = false
     root.hideOverlay()
@@ -241,6 +303,7 @@ Item {
 
   // Remind again shortly, without touching the stats.
   function snooze() {
+    root.resumeMedia()
     if (root.previewing) {
       root.finishPreview()
       return
@@ -277,6 +340,9 @@ Item {
   }
 
   function stop() {
+    // Never leave somebody's film parked on pause because the plugin was
+    // switched off mid-stretch.
+    root.resumeMedia()
     root.pause()
   }
 
@@ -510,6 +576,7 @@ Item {
       display: root.formatTime(root.remaining),
       deadline: root.deadline,
       paused: root.paused,
+      mediaActive: root.mediaActive,
       snoozed: root.pendingSnooze,
       move: root.moveIndex + 1,
       moveCount: root.moveCount,
